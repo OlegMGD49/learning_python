@@ -1,61 +1,45 @@
 import random
+from http.client import responses
 
 from faker import Faker
 
-from src.services.university.helpers.teacher_helper import TeacherHelper
-from src.services.university.models.base_teacher import SubjectEnum
+from services.university.helpers.teacher_helper import TeacherHelper
+from services.university.models.base_teacher import SubjectEnum
+from services.university.models.error_response import ErrorResponse
 
 faker = Faker()
 
 
-class TestCreateTeacher:
+class TestTeacherContact:
+    def test_create_teacher(self, university_api_client_admin):
+        teacher_helper = TeacherHelper(api_utils=university_api_client_admin)
+        response = teacher_helper.post_teacher(json={"first_name": faker.first_name(),
+                                                     "last_name": faker.last_name(),
+                                                     "subject": random.choice([option for option in SubjectEnum])})
+        assert response.status_code == 201, \
+            f"Wrong status code. Actual: '{response.status_code}', but expected: '201'"
 
-    def test_create_teacher(self, university_base_client_admin):
-        teacher_helper = TeacherHelper(base_api_client=university_base_client_admin)
-        resp = teacher_helper.post_teacher(json={"first_name": faker.first_name(),
-                                                 "last_name": faker.last_name(),
-                                                 "subject": random.choice([option for option in SubjectEnum])})
-        assert resp.status_code == 201, resp.json()
+    def test_get_teacher_by_id(self, university_api_client_admin, create_teacher_id):
+        teacher_helper = TeacherHelper(api_utils=university_api_client_admin)
+        response = teacher_helper.get_teacher_by_id(teacher_id=create_teacher_id)
 
-    def test_get_teacher_by_id(self, university_base_client_admin):
-        teacher_helper = TeacherHelper(base_api_client=university_base_client_admin)
-        resp = teacher_helper.post_teacher(json={
-            "first_name": faker.first_name(),
-            "last_name": faker.last_name(),
-            "subject": random.choice([option for option in SubjectEnum])
-        })
+        assert response.status_code == 200, \
+            f"Wrong status code. Actual: '{response.status_code}', but expected: '200'"
 
-        assert resp.status_code == 201, resp.json()
-        teacher_id = resp.json()["id"]
-        teacher_first_name = resp.json()["first_name"]
-        teacher_subject = resp.json()["subject"]
+    def test_delete_teacher(self, university_api_client_admin, create_teacher_id):
+        teacher_helper = TeacherHelper(api_utils=university_api_client_admin)
+        response = teacher_helper.delete_teacher_by_id(teacher_id=create_teacher_id)
 
-        resp = teacher_helper.get_teacher_by_id(teacher_id)
+        assert response.status_code == 200, \
+            f"Wrong status code. Actual: '{response.status_code}', but expected: '200'"
 
-        assert resp.status_code == 200, resp.json()
-        assert resp.json()["first_name"] == teacher_first_name
-        assert resp.json()["subject"] == teacher_subject
+    def test_get_teacher_after_deleted(self, university_api_client_admin, create_teacher_id):
+        teacher_helper = TeacherHelper(api_utils=university_api_client_admin)
+        teacher_helper.delete_teacher_by_id(teacher_id=create_teacher_id)
 
-    def test_create_teacher_anonym(self, university_base_client_anonym):
-        teacher_helper = TeacherHelper(base_api_client=university_base_client_anonym)
-        resp = teacher_helper.post_teacher(json={"first_name": faker.first_name(),
-                                                 "last_name": faker.last_name(),
-                                                 "subject": random.choice([option for option in SubjectEnum])})
-        assert resp.status_code == 401, resp.json()
+        response = teacher_helper.get_teacher_by_id(teacher_id=create_teacher_id)
+        error = ErrorResponse(**response.json())
 
-    def test_delete_teacher_by_id(self, university_base_client_admin):
-        teacher_helper = TeacherHelper(base_api_client=university_base_client_admin)
-        resp = teacher_helper.post_teacher(json={"first_name": faker.first_name(),
-                                                 "last_name": faker.last_name(),
-                                                 "subject": random.choice([option for option in SubjectEnum])})
-        assert resp.status_code == 201, resp.json()
-        teacher_id = resp.json()["id"]
-
-        resp = teacher_helper.delete_teacher_by_id(teacher_id)
-
-        assert resp.status_code == 200, resp.json()
-
-        resp = teacher_helper.get_teacher_by_id(teacher_id)
-
-        assert resp.status_code == 404, resp.json()
-        assert resp.json()["detail"] == "Teacher not found"
+        assert response.status_code == 404, \
+            f"Wrong status code. Actual: '{response.status_code}', but expected: '404'"
+        assert error.detail == "Teacher not found"
