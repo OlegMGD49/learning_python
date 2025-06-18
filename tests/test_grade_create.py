@@ -16,4 +16,5 @@ class TestGradeCreate:
                                                    GradeRange.MAX_GRADE))
         grade_response = university_service.create_grade(grade_request=grade)
 
-        assert grade_response.student_id == created_student_id
+        assert grade_response.student_id == created_student_id, \
+            f"Wrong student id. Actual: '{grade_response.student_id}', but expected: '{created_student_id}'"

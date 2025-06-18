@@ -38,8 +38,16 @@ class TestTeacherContact:
         teacher_helper.delete_teacher_by_id(teacher_id=create_teacher_id)
 
         response = teacher_helper.get_teacher_by_id(teacher_id=create_teacher_id)
-        error = ErrorResponse(**response.json())
 
         assert response.status_code == 404, \
             f"Wrong status code. Actual: '{response.status_code}', but expected: '404'"
-        assert error.detail == "Teacher not found"
+
+    def test_msg_error_in_get_teacher_after_deleted(self, university_api_client_admin, create_teacher_id):
+        teacher_helper = TeacherHelper(api_utils=university_api_client_admin)
+        teacher_helper.delete_teacher_by_id(teacher_id=create_teacher_id)
+
+        response = teacher_helper.get_teacher_by_id(teacher_id=create_teacher_id)
+        error = ErrorResponse(**response.json())
+
+        assert error.detail == "Teacher not found", \
+            f"Wrong text error. Actual: '{error.detail}', but expected: 'Teacher not found'"

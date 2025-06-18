@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from enum import IntEnum
 
 
-class GradeRange(IntEnum):
+class GradeRange:
     MIN_GRADE = 0
     MAX_GRADE = 5
 
@@ -13,4 +13,4 @@ class BaseGrades(BaseModel):
 
     teacher_id: int
     student_id: int
-    grade: int = Field(ge=0, le=5)
+    grade: int = Field(ge=GradeRange.MIN_GRADE, le=GradeRange.MAX_GRADE)
